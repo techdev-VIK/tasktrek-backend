@@ -23,9 +23,15 @@ const verifyJWT = (req, res, next) => {
     }
 
     try {
-        
+        // console.log(token)
+
+        const decodedToken = jwt.verify(token, JWT_SECRET);
+
+        req.user = decodedToken;
+
+        next();
     } catch (error) {
-        
+        return res.status(402).json({message: "Invalid token"});
     }
 }
 
@@ -44,6 +50,11 @@ app.post('/login', (req, res) => {
     }else{
         res.json({message: "Invalid Secret"})
     }
+})
+
+
+app.get('/api/data', verifyJWT, (req, res) => {
+    res.json({message: "Protected route accesible."})
 })
 
 

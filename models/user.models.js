@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 
 const tasktrekUserSchema = new mongoose.Schema({
-    userName: {
+    username: {
         type: String,
         required: true,
         unique: true,

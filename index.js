@@ -4,7 +4,17 @@ const jwt = require('jsonwebtoken');
 
 const app = express();
 
-const SECRET_KEY = "supersecretadmin";
+// const SECRET_KEY = "supersecretadmin";
+
+const cors = require("cors");
+
+const corsOptions = {
+  origin: "*",
+  credentials: true,
+  optionSuccessStatus: 200,
+};
+
+app.use(cors(corsOptions));
 
 const JWT_SECRET = 'your_jwt_token';
 
@@ -41,14 +51,26 @@ initializeDatabase();
 
 // authorize user
 
-app.post('/login', (req, res) => {
-    const {secret} = req.body;
+app.post('/login', async (req, res) => {
+    try {
+    const {username, password} = req.body;
 
-    if(secret === SECRET_KEY){
-        const token = jwt.sign({role: "admin"}, JWT_SECRET, {expiresIn: '24h'});
-        res.json({token})
-    }else{
-        res.json({message: "Invalid Secret"})
+    const user = await TaskTrek.findOne({username});
+
+    if(!user){
+        return res.status(404).json({message: 'User not found'})
+    }
+
+    if(user.password !== password){
+        return res.status(401).json({message: "Invalid Password"})
+    }
+
+    const token = jwt.sign({role: 'admin'}, JWT_SECRET, {expiresIn: '24h'});
+
+    res.json({token, message: "Login success"})
+    
+    } catch (error) {
+        res.status(500).json({message: 'Server Error', error})
     }
 })
 
@@ -60,27 +82,33 @@ app.get('/api/data', verifyJWT, (req, res) => {
 
 // Add a new user:
 
-const addUser = async (userData) => {
+
+app.post('/user', async (req, res) => {
     try {
-        const newUser = new TaskTrek(userData);
-        await newUser.save();
+        const {username, password} = req.body;
+        
+        if (!username || !password) {
+            return res.status(400).json({message: 'Username and password are required.'});
+        }
+
+        // Check if the user already exists
+        const existingUser = await TaskTrek.findOne({username});
+
+        if (existingUser) {
+            return res.status(400).json({message: 'Username already taken.'});
+        }
+
+        // Create new user
+        const newUser = new TaskTrek({username, password});
+        const savedUser = await newUser.save();
+
+        // Send success response
+        res.status(201).json({message: 'User added successfully', user: savedUser});
     } catch (error) {
-        console.log(error);
-        throw error;
+        console.error(error);
+        res.status(500).json({error: 'Failed to add user'});
     }
-}
-
-
-app.post('/user', async(req, res) => {
-    try {
-        const savedUser = await addUser(req.body);
-        req.status(200).json({message: "User added", user: savedUser});
-    } catch (error) {
-        console.log(error)
-        res.status(500).json({error: 'Failed to add user'})
-    }
-})
-
+});
 
 
 

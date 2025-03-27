@@ -4,8 +4,6 @@ const jwt = require('jsonwebtoken');
 
 const app = express();
 
-// const SECRET_KEY = "supersecretadmin";
-
 const cors = require("cors");
 
 const corsOptions = {
